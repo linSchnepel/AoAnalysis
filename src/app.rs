@@ -5,6 +5,8 @@ use leptos_router::{
     StaticSegment,
 };
 
+use crate::pages::{ExplorePage, HomePage};
+
 pub fn shell(options: LeptosOptions) -> impl IntoView {
     view! {
         <!DOCTYPE html>
@@ -38,6 +40,7 @@ pub fn App() -> impl IntoView {
             <main>
                 <Routes fallback=|| "Page not found.".into_view()>
                     <Route path=StaticSegment("") view=HomePage/>
+                    <Route path=StaticSegment("explore") view=ExplorePage/>
                 </Routes>
             </main>
         </Router>
@@ -76,47 +79,4 @@ pub async fn get_dataset_summary() -> Result<DatasetSummary, ServerFnError> {
         fandom_counts,
         total,
     })
-}
-
-// ---------------------------------------------------------------------------
-// Home page component
-// ---------------------------------------------------------------------------
- 
-#[component]
-fn HomePage() -> impl IntoView {
-    let summary = Resource::new(|| (), |_| get_dataset_summary());
- 
-    view! {
-        <div class="home">
-            <h1>"AOAnalysis"</h1>
-            <Suspense fallback=|| view! { <p class="loading">"Loading data..."</p> }>
-                {move || {
-                    summary.get().map(|result| match result {
-                        Err(e) => view! {
-                            <p class="error">"Error loading data: " {e.to_string()}</p>
-                        }.into_any(),
-                        Ok(data) => view! {
-                            <section class="summary">
-                                <h2>"Dataset Summary"</h2>
-                                <p class="total">
-                                    "Total listings loaded: "
-                                    <strong>{data.total}</strong>
-                                </p>
-                                <ul class="fandom-list">
-                                    {data.fandom_counts.into_iter().map(|(name, count)| view! {
-                                        <li>
-                                            <span class="fandom-name">{name}</span>
-                                            " — "
-                                            <span class="fandom-count">{count}</span>
-                                            " listings"
-                                        </li>
-                                    }).collect::<Vec<_>>()}
-                                </ul>
-                            </section>
-                        }.into_any(),
-                    })
-                }}
-            </Suspense>
-        </div>
-    }
 }
