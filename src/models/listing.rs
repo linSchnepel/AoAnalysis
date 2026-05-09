@@ -20,7 +20,7 @@ pub enum Rating {
     NotRated,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Hash)]
 pub enum Warning {
     #[serde(rename = "No Archive Warnings Apply")]
     NoWarnings,
@@ -36,7 +36,7 @@ pub enum Warning {
     RapeNonCon,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Hash)]
 pub enum Category {
     #[serde(rename = "Gen")]
     Gen,

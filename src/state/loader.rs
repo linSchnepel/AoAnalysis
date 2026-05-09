@@ -8,9 +8,11 @@ use std::path::Path;
 use std::sync::Arc;
 
 use tracing::{error, info, warn};
+use chrono::{Datelike, TimeZone, Utc};
 
-use crate::models::{History, Listing};
-use crate::state::{AppState, FandomData, SharedState};
+use crate::models::{History, Listing, Category};
+use crate::state::{AppState, FandomData, SharedState, ListingIndex, AppConfig, FandomStats};
+use crate::models::ChapterCount;
 
 const DATA_DIR: &str = "assets/data";
 
@@ -76,7 +78,23 @@ pub async fn load_app_state() -> SharedState {
             );
         }
 
-        fandoms.insert(fandom_name, FandomData { listings });
+        
+
+        fandoms.insert(fandom_name, FandomData { listings, index: ListingIndex::default(), stats: FandomStats::default() });
+    }
+
+    // Load config
+    let config = AppConfig::load().unwrap_or_else(|e| {
+        warn!("Failed to load config: {e} — no featured fandom set");
+        AppConfig { featured_fandom: String::new() }
+    });
+
+    // Build per-fandom index and stats
+    for fandom_data in fandoms.values_mut() {
+        for listing in &fandom_data.listings {
+            fandom_data.index.add(listing);
+        }
+        fandom_data.stats = compute_stats(&fandom_data.listings);
     }
 
     info!(
@@ -85,7 +103,92 @@ pub async fn load_app_state() -> SharedState {
         fandoms.values().map(|f| f.listings.len()).sum::<usize>()
     );
 
-    Arc::new(AppState { fandoms })
+    let mut index = ListingIndex::default();
+    for fandom_data in fandoms.values() {
+        for listing in &fandom_data.listings {
+            index.add(listing);
+        }
+    }
+
+    info!(
+        "Index built: {} tags, {} authors, {} series",
+        index.tags.len(),
+        index.authors.len(),
+        index.series.len(),
+    );
+
+    Arc::new(AppState { fandoms, featured_fandom: config.featured_fandom  })
+}
+
+#[cfg(feature = "ssr")]
+fn compute_stats(listings: &[Listing]) -> FandomStats {
+    let mut creations_by_year: HashMap<i32, u32> = HashMap::new();
+    let mut one_shots = 0u32;
+    let mut complete_multi = 0u32;
+    let mut incomplete_multi = 0u32;
+    let mut category_counts: HashMap<Category, u32> = HashMap::new();
+    let mut kudos: Vec<u32> = Vec::with_capacity(listings.len());
+    let mut hits: Vec<u32> = Vec::with_capacity(listings.len());
+    let mut words: Vec<u32> = Vec::with_capacity(listings.len());
+    let mut bookmarks: Vec<u32> = Vec::with_capacity(listings.len());
+
+    for listing in listings {
+        // Creation date: first historyUNIX entry, or update_unix
+        let created_unix = listing.history
+            .as_ref()
+            .and_then(|h| h.first())
+            .map(|e| e.unix.as_millis())
+            .unwrap_or(listing.update_unix.as_millis());
+
+        // Unix ms → year
+        let year = chrono::DateTime::from_timestamp_millis(created_unix)
+            .map(|dt| dt.year())
+            .unwrap_or(0);
+        *creations_by_year.entry(year).or_default() += 1;
+
+        // Completion breakdown
+        let is_one_shot = matches!(
+            &listing.stats.chapters,
+            Some(ChapterCount { published: 1, total: Some(1) })
+        );
+        let is_complete = listing.completion == crate::models::Completion::CompleteWork;
+        match (is_one_shot, is_complete) {
+            (true, _)      => one_shots += 1,
+            (false, true)  => complete_multi += 1,
+            (false, false) => incomplete_multi += 1,
+        }
+
+        // Category counts
+        for cat in &listing.category {
+            *category_counts.entry(cat.clone()).or_default() += 1;
+        }
+
+        // Stats for percentiles
+        kudos.push(listing.stats.kudos.unwrap_or(0) as u32);
+        hits.push(listing.stats.hits.unwrap_or(0) as u32);
+        words.push(listing.stats.words.unwrap_or(0) as u32);
+        bookmarks.push(listing.stats.bookmarks.unwrap_or(0) as u32);
+    }
+
+    // Sort for percentile queries
+    kudos.sort_unstable();
+    hits.sort_unstable();
+    words.sort_unstable();
+    bookmarks.sort_unstable();
+
+    // Flatten and sort creations by year
+    let mut creations_by_year: Vec<(i32, u32)> = creations_by_year.into_iter().collect();
+    creations_by_year.sort_unstable_by_key(|(year, _)| *year);
+
+    FandomStats {
+        creations_by_year,
+        completion_breakdown: (one_shots, complete_multi, incomplete_multi),
+        category_counts,
+        kudos_sorted: kudos,
+        hits_sorted: hits,
+        words_sorted: words,
+        bookmarks_sorted: bookmarks,
+    }
 }
 
 // ---------------------------------------------------------------------------

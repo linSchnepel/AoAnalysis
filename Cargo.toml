@@ -15,6 +15,7 @@ leptos_axum = { version = "0.8.0", optional = true }
 leptos_meta = { version = "0.8.0" }
 tokio = { version = "1", features = ["rt-multi-thread"], optional = true }
 wasm-bindgen = { version = "0.2.106", optional = true }
+toml = { version = "0.8", optional = true }
 
 # Charts (client-side, SSR-safe)
 leptos-chartistry = { version = "0.2.2" }
@@ -48,6 +49,7 @@ ssr = [
     "dep:tracing",
     "dep:tracing-subscriber",
     "leptos-chartistry/ssr",
+    "dep:toml",
 ]
 
 # Defines a size-optimized profile for the WASM bundle in release mode
