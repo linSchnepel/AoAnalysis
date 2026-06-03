@@ -15,11 +15,19 @@ pub struct NewsItemData {
 
 // TODO: load_updates should become a #[server] fn and NewsSection should use a Resource, same as charts.
 pub fn load_updates() -> Result<Vec<NewsItemData>, String> {
-    let raw = std::fs::read_to_string("assets/files/updates.json")
-        .map_err(|e| e.to_string())?;
-    serde_json::from_str(&raw).map_err(|e| e.to_string())
+    #[cfg(feature = "ssr")]
+    {
+        let raw = std::fs::read_to_string("assets/files/updates.json")
+            .map_err(|e| e.to_string())?;
+        serde_json::from_str(&raw).map_err(|e| e.to_string())
+    }
+    #[cfg(not(feature = "ssr"))]
+    {
+        Ok(vec![])
+    }
 }
 
+// TODO: change href
 #[component]
 pub fn NewsSection(updates: Vec<NewsItemData>) -> impl IntoView {
     view! {
@@ -38,6 +46,14 @@ pub fn NewsSection(updates: Vec<NewsItemData>) -> impl IntoView {
     }
 }
 
+/** 
+{item.comments.map(|c| view! {
+    <span class="comments">
+        "Comments: "
+        <A href=item.href.to_string()>{c}</A>
+    </span>
+})}
+*/
 #[component]
 fn NewsItem(item: NewsItemData) -> impl IntoView {
     view! {
@@ -52,12 +68,7 @@ fn NewsItem(item: NewsItemData) -> impl IntoView {
                         "Published: "
                         <span class="date">{item.date}</span>
                     </span>
-                    {item.comments.map(|c| view! {
-                        <span class="comments">
-                            "Comments: "
-                            <A href=item.href.to_string()>{c}</A>
-                        </span>
-                    })}
+                    
                 </p>
             </div>
 

@@ -12,14 +12,14 @@ pub fn Header() -> impl IntoView {
             <h1 class="heading">
                 <A href="/">
                     <span>"Archive Analysis"</span>
-                    <img alt="Archive Analysis logo" class="logo" src=""/>
+                    <img alt="Archive Analysis logo" class="logo" src="/images/logo_42.png"/>
                 </A>
             </h1>
 
             <div id="login" class="dropdown" aria-haspopup="true">
                 <p class="user actions">
                     <A attr:id="login-dropdown" href="" attr:class="dropdown-toggle">
-                        "check out other project"
+                        "Related Projects here"
                     </A>
                 </p>
             </div>
@@ -28,7 +28,7 @@ pub fn Header() -> impl IntoView {
                 <ul class="primary navigation actions">
                     <li class="dropdown" aria-haspopup="true">
                         <A href="/explore?chart=timeline" attr:class="dropdown-toggle">
-                            "About"
+                            "Charts"
                         </A>
                         <ul class="menu dropdown-menu">
                             <li><A href="/explore?chart=timeline">"Timeline"</A></li>

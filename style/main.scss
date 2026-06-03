@@ -528,7 +528,7 @@ notice that CSS3 declarations sit are indented twice (four spaces) and always co
 /* primary navigation */
 
 #header .primary {
-  background: #900 url(/images/skins/textures/tiles/red-ao3.png);
+  background: #900 url("/images/red-ao3.png");
   padding: 0 0;
   width: 100%;
     box-shadow: inset 0 -6px 10px rgba(0, 0, 0, 0.35),
@@ -720,7 +720,7 @@ https://otwcode.github.io/docs/patterns/regions.html#footer-region
 */
 
 #footer {
-  background: #900 url("/images/skins/textures/tiles/red-ao3.png");
+  background: #900 url("/images/red-ao3.png");
   border-top: 2px solid;
   color: #fff;
   float: left;
@@ -1043,7 +1043,7 @@ form li ul.autocomplete li.input {
 }
 
 .autocomplete .dropdown ul li:hover, .autocomplete .dropdown li.selected {
-  background: url("/images/skins/textures/tiles/red-ao3.png") top left #900;
+  background: url("/images/red-ao3.png") top left #900;
   color: #fff;
 }
 

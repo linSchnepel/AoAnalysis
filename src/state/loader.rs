@@ -78,8 +78,6 @@ pub async fn load_app_state() -> SharedState {
             );
         }
 
-        
-
         fandoms.insert(fandom_name, FandomData { listings, index: ListingIndex::default(), stats: FandomStats::default() });
     }
 
@@ -168,6 +166,16 @@ fn compute_stats(listings: &[Listing]) -> FandomStats {
         hits.push(listing.stats.hits.unwrap_or(0) as u32);
         words.push(listing.stats.words.unwrap_or(0) as u32);
         bookmarks.push(listing.stats.bookmarks.unwrap_or(0) as u32);
+
+        for t in &listing.tags    { unique_tags.insert(t.as_str()); }
+        for a in &listing.authors { unique_authors.insert(a.as_str()); }
+        for s in &listing.series  { unique_series.insert(s.as_str()); }
+
+        total_words     += listing.stats.words.unwrap_or(0) as u64;
+        total_hits      += listing.stats.hits.unwrap_or(0) as u64;
+        total_kudos     += listing.stats.kudos.unwrap_or(0) as u64;
+        total_bookmarks += listing.stats.bookmarks.unwrap_or(0) as u64;
+        total_comments  += listing.stats.comments.unwrap_or(0) as u64;
     }
 
     // Sort for percentile queries
@@ -188,6 +196,16 @@ fn compute_stats(listings: &[Listing]) -> FandomStats {
         hits_sorted: hits,
         words_sorted: words,
         bookmarks_sorted: bookmarks,
+        
+        total_listings:  listings.len() as u32,
+        unique_tags:     unique_tags.len() as u32,
+        unique_authors:  unique_authors.len() as u32,
+        unique_series:   unique_series.len() as u32,
+        total_words:     total_words,
+        total_hits:      total_hits,
+        total_kudos:     total_kudos,
+        total_bookmarks: total_bookmarks,
+        total_comments:  total_comments,
     }
 }
 
@@ -233,7 +251,7 @@ fn discover_files(dir: &Path) -> HashMap<String, FileGroup> {
                 .or_insert_with(|| FileGroup { clean: None, histories: None })
                 .histories = Some(path);
         }
-        // Unknown suffix → silently ignore
+        // Unknown suffix will ignore
     }
 
     groups

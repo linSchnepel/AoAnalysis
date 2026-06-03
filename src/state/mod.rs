@@ -53,6 +53,16 @@ pub struct FandomStats {
     pub words_sorted: Vec<u32>,
     /// Sorted bookmark counts for percentile computation
     pub bookmarks_sorted: Vec<u32>,
+
+    pub total_listings: u32,
+    pub unique_tags: u32,
+    pub unique_authors: u32,
+    pub unique_series: u32,
+    pub total_words: u64,
+    pub total_hits: u64,
+    pub total_kudos: u64,
+    pub total_bookmarks: u64,
+    pub total_comments: u64,
 }
 
 impl FandomStats {

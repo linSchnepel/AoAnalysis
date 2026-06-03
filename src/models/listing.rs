@@ -103,6 +103,8 @@ struct RawStats {
     bookmarks: Option<u32>,
     #[serde(rename = "Hits")]
     hits: Option<u32>,
+    #[serde(rename = "Comments")]
+    comments: Option<u32>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -113,6 +115,7 @@ pub struct Stats {
     pub kudos: Option<u32>,
     pub bookmarks: Option<u32>,
     pub hits: Option<u32>,
+    pub comments: Option<u32>,
 }
 
 impl From<RawStats> for Stats {
@@ -124,6 +127,7 @@ impl From<RawStats> for Stats {
             kudos: raw.kudos,
             bookmarks: raw.bookmarks,
             hits: raw.hits,
+            comments: raw.comments,
         }
     }
 }
