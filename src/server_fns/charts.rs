@@ -4,6 +4,7 @@ use crate::components::charts::{
     bar::BarDatum, line::LinePoint, percentile::PercentileRow, pie::PieSlice,
 };
 
+/// TODO: move
 /// All chart data for the featured fandom homepage.
 /// This is the only thing that crosses the wire — never `FandomStats` itself.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -30,14 +31,24 @@ pub async fn get_homepage_charts() -> Result<HomepageChartDto, ServerFnError> {
         .map(|f| (state.featured_fandom.clone(), &f.stats))
         .ok_or_else(|| ServerFnError::new("Featured fandom not found"))?;
 
+    const MONTHS: &[&str] = &[
+        "Jan","Feb","Mar","Apr","May","Jun",
+        "Jul","Aug","Sep","Oct","Nov","Dec",
+    ];
+
     // --- Line chart: creations by year ---
     let line = stats
-        .creations_by_year
+        .creations_by_month
         .iter()
-        .map(|&(year, count)| LinePoint {
-            x: year as f64,
+        .map(|&(year, month, count)| LinePoint {
+            x: (year as f64) * 12.0 + (month as f64 - 1.0),
             y: count as f64,
-            label: year.to_string(),
+            label:
+                if month == 1 {
+                    format!("{} {}", MONTHS[(month - 1) as usize], year)
+                } else {
+                    MONTHS[(month - 1) as usize].to_string()
+                },
         })
         .collect();
 
@@ -54,7 +65,7 @@ pub async fn get_homepage_charts() -> Result<HomepageChartDto, ServerFnError> {
         .category_counts
         .iter()
         .map(|(cat, &count)| BarDatum {
-            label: format!("{:?}", cat),
+            label: cat.to_string(),
             value: count as f64,
         })
         .collect();

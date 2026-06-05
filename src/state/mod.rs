@@ -36,11 +36,10 @@ impl FandomData {
 
 /// Pre-computed statistics for a fandom, derived at load time.
 /// Never sent to the client directly. Exposed only via ChartDto through server fns.
-
 #[derive(Debug, Default)]
 pub struct FandomStats {
-    /// Works created per year: (year, count)
-    pub creations_by_year: Vec<(i32, u32)>,
+    /// Works created per (year, month): (year, month, count). Month is 1-indexed.
+    pub creations_by_month: Vec<(i32, u32, u32)>,
     /// Completion breakdown: (one_shots, complete_multi, incomplete_multi)
     pub completion_breakdown: (u32, u32, u32),
     /// Count of works per category (works can have multiple)

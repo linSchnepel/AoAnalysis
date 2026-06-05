@@ -120,7 +120,7 @@ pub async fn load_app_state() -> SharedState {
 
 #[cfg(feature = "ssr")]
 fn compute_stats(listings: &[Listing]) -> FandomStats {
-    let mut creations_by_year: HashMap<i32, u32> = HashMap::new();
+    let mut creations_by_month: HashMap<(i32, u32), u32> = HashMap::new();
     let mut one_shots = 0u32;
     let mut complete_multi = 0u32;
     let mut incomplete_multi = 0u32;
@@ -130,6 +130,16 @@ fn compute_stats(listings: &[Listing]) -> FandomStats {
     let mut words: Vec<u32> = Vec::with_capacity(listings.len());
     let mut bookmarks: Vec<u32> = Vec::with_capacity(listings.len());
 
+    let mut unique_tags:    std::collections::HashSet<&str> = std::collections::HashSet::new();
+    let mut unique_authors: std::collections::HashSet<&str> = std::collections::HashSet::new();
+    let mut unique_series:  std::collections::HashSet<&str> = std::collections::HashSet::new();
+
+    let mut total_words     = 0u64;
+    let mut total_hits      = 0u64;
+    let mut total_kudos     = 0u64;
+    let mut total_bookmarks = 0u64;
+    let mut total_comments  = 0u64;
+
     for listing in listings {
         // Creation date: first historyUNIX entry, or update_unix
         let created_unix = listing.history
@@ -138,11 +148,13 @@ fn compute_stats(listings: &[Listing]) -> FandomStats {
             .map(|e| e.unix.as_millis())
             .unwrap_or(listing.update_unix.as_millis());
 
-        // Unix ms → year
-        let year = chrono::DateTime::from_timestamp_millis(created_unix)
-            .map(|dt| dt.year())
-            .unwrap_or(0);
-        *creations_by_year.entry(year).or_default() += 1;
+        if let Some(dt) = chrono::DateTime::from_timestamp_millis(created_unix) {
+            *creations_by_month
+                .entry((dt.year(), dt.month()))
+                .or_default() += 1;
+        } else {
+            warn!("Listing id '{}' has invalid creation timestamp: {created_unix}", listing.id);
+        }
 
         // Completion breakdown
         let is_one_shot = matches!(
@@ -150,6 +162,7 @@ fn compute_stats(listings: &[Listing]) -> FandomStats {
             Some(ChapterCount { published: 1, total: Some(1) })
         );
         let is_complete = listing.completion == crate::models::Completion::CompleteWork;
+        // let last_update_last_year = listing.history.as_ref().and_then(|h| h.last()).map(|e| e.unix).unwrap_or(listing.update_unix) < (Utc::now().timestamp_millis() - 365*24*3600*1000);
         match (is_one_shot, is_complete) {
             (true, _)      => one_shots += 1,
             (false, true)  => complete_multi += 1,
@@ -184,12 +197,15 @@ fn compute_stats(listings: &[Listing]) -> FandomStats {
     words.sort_unstable();
     bookmarks.sort_unstable();
 
-    // Flatten and sort creations by year
-    let mut creations_by_year: Vec<(i32, u32)> = creations_by_year.into_iter().collect();
-    creations_by_year.sort_unstable_by_key(|(year, _)| *year);
+    // Flatten and sort creations by month
+    let mut creations_by_month: Vec<(i32, u32, u32)> = creations_by_month
+        .into_iter()
+        .map(|((y, m), c)| (y, m, c))
+        .collect();
+    creations_by_month.sort_unstable_by_key(|&(y, m, _)| (y, m));
 
     FandomStats {
-        creations_by_year,
+        creations_by_month,
         completion_breakdown: (one_shots, complete_multi, incomplete_multi),
         category_counts,
         kudos_sorted: kudos,
